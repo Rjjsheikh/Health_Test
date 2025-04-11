@@ -1,4 +1,3 @@
-// Firebase imports and config setup (you already have this part)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -15,25 +14,20 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Fetching data
 const querySnapshot = await getDocs(collection(db, "patientData"));
-const patientData = {};
-
+const patientData = [];
 querySnapshot.forEach((doc) => {
-  patientData[doc.id] = doc.data();
-  console.log(doc.id, "=>", doc.data());
+  patientData.push(doc.data());
 });
-
-
 
 const container = document.getElementById("data-container");
 
-for (const [docId, doc] of Object.entries(patientData)) {
+// Display patient details
+patientData.forEach((doc, index) => {
   const entry = document.createElement("div");
   entry.className = "patient-card";
-
   entry.innerHTML = `
-    <h3>Patient ID: ${docId}</h3>
+    <h3>Patient ${index + 1}</h3>
     <p><strong>Date:</strong> ${doc.date}</p>
 
     <h4>Activity</h4>
@@ -63,11 +57,121 @@ for (const [docId, doc] of Object.entries(patientData)) {
       <li>Heart Rate: ${doc.vitals?.heart_rate?.join(', ')}</li>
       <li>Temperature: ${doc.vitals?.temperature?.join(', ')}</li>
     </ul>
-    <hr>
   `;
-
   container.appendChild(entry);
-}
+});
+
+// --- Data Preparation ---
+const labels = patientData.map((_, i) => `Patient ${i + 1}`);
+const steps = patientData.map(d => d.activity?.steps || 0);
+const calories = patientData.map(d => d.nutrition?.calories || 0);
+const water = patientData.map(d => d.nutrition?.water_oz || 0);
+
+// Compute average heart rate if array is provided
+const avgHeartRates = patientData.map(d => {
+  const rates = d.vitals?.heart_rate || [];
+  if (Array.isArray(rates) && rates.length > 0) {
+    const sum = rates.reduce((a, b) => a + b, 0);
+    return sum / rates.length;
+  }
+  return 0;
+});
+
+// Sleep quality counts
+const sleepQualityCounts = patientData.reduce((acc, d) => {
+  const quality = d.sleep?.quality || "Unknown";
+  acc[quality] = (acc[quality] || 0) + 1;
+  return acc;
+}, {});
+
+// --- Bar Chart: Steps & Calories ---
+new Chart(document.getElementById("barChart"), {
+  type: "bar",
+  data: {
+    labels,
+    datasets: [
+      {
+        label: "Steps",
+        data: steps,
+        backgroundColor: "rgba(75, 192, 192, 0.6)"
+      },
+      {
+        label: "Calories",
+        data: calories,
+        backgroundColor: "rgba(255, 99, 132, 0.6)"
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      title: { display: true, text: "Steps & Calories Burned per Patient" }
+    }
+  }
+});
+
+// --- Line Chart: Heart Rate Over Time ---
+new Chart(document.getElementById("lineChart"), {
+  type: "line",
+  data: {
+    labels,
+    datasets: [{
+      label: "Average Heart Rate",
+      data: avgHeartRates,
+      borderColor: "rgba(153, 102, 255, 1)",
+      backgroundColor: "rgba(153, 102, 255, 0.2)",
+      fill: true,
+      tension: 0.4
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      title: { display: true, text: "Heart Rate Over Time" }
+    }
+  }
+});
+
+// --- Pie Chart: Sleep Quality Distribution ---
+const sleepLabels = Object.keys(sleepQualityCounts);
+const sleepData = Object.values(sleepQualityCounts);
+const pieColors = sleepLabels.map((_, i) => `hsl(${i * 60}, 70%, 60%)`);
+
+new Chart(document.getElementById("pieChart"), {
+  type: "pie",
+  data: {
+    labels: sleepLabels,
+    datasets: [{
+      label: "Sleep Quality",
+      data: sleepData,
+      backgroundColor: pieColors
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      title: { display: true, text: "Sleep Quality Distribution" }
+    }
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
