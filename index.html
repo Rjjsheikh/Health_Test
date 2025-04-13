@@ -10,6 +10,12 @@
       margin: 30px;
       background-color: #f9f9f9;
     }
+    h1 {
+      margin-bottom: 20px;
+    }
+    h2, h3 {
+      margin-top: 40px;
+    }
     .patient-card {
       border: 1px solid #ccc;
       background: #fff;
@@ -18,21 +24,17 @@
       border-radius: 10px;
       box-shadow: 2px 2px 8px rgba(0,0,0,0.05);
     }
-    h1 {
-      margin-bottom: 40px;
-    }
-    h2, h3 {
-      margin-top: 50px;
-    }
     canvas {
       margin-top: 20px;
       max-width: 100%;
+      display: block;
+      margin-bottom: 20px;
     }
     table {
       border-collapse: collapse;
       width: 100%;
-      margin-top: 20px;
       background-color: #fff;
+      margin-top: 10px;
     }
     table, th, td {
       border: 1px solid #ccc;
@@ -44,36 +46,72 @@
     th {
       background-color: #f0f0f0;
     }
+    .search-container {
+      margin: 30px 0;
+      padding: 15px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .search-container label {
+      margin-right: 10px;
+    }
+    .error-message {
+      color: red;
+      font-weight: bold;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
 
   <h1>Patient Data Dashboard</h1>
 
-  <!-- Patient Raw Data -->
+  <div class="search-container">
+    <label for="search-date">Filter by Date (YYYY-MM-DD):</label>
+    <input type="text" id="search-date" placeholder="e.g., 2025-04-10">
+
+    <label for="search-quality" style="margin-left: 20px;">Filter by Sleep Quality:</label>
+    <select id="search-quality">
+      <option value="">--Select--</option>
+      <!-- Options will be dynamically added here -->
+    </select>
+
+    <button id="search-btn">Search</button>
+    <div class="error-message" id="error-msg"></div>
+  </div>
+
   <div id="data-container"></div>
 
-  <!-- Visualizations Section -->
   <h2>Visualizations</h2>
 
   <h3>Steps and Calories Burned per Patient</h3>
   <canvas id="barChart"></canvas>
 
-  <h3>Sleep Duration Trend Over Time</h3>
+  <h3>Heart Rate Over Time</h3>
   <canvas id="lineChart"></canvas>
 
   <h3>Sleep Quality Distribution</h3>
   <canvas id="pieChart"></canvas>
 
-  <h3>General Comparison Table</h3>
+  <h3 style="margin-top: 30px;">Vitals Comparison Table</h3>
   <table id="data-table"></table>
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script type="module" src="app.js"></script>
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
 
 
 

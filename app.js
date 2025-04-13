@@ -13,156 +13,169 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
 const querySnapshot = await getDocs(collection(db, "patientData"));
-const patientData = [];
-querySnapshot.forEach((doc) => {
-  patientData.push(doc.data());
-});
+const allData = [];
+querySnapshot.forEach((doc) => allData.push(doc.data()));
 
 const container = document.getElementById("data-container");
+const barCanvas = document.getElementById("barChart");
+const lineCanvas = document.getElementById("lineChart");
+const pieCanvas = document.getElementById("pieChart");
+const vitalsTable = document.getElementById("data-table");
+const searchBtn = document.getElementById("search-btn");
+const errorMsg = document.getElementById("error-msg");
+const qualitySelect = document.getElementById("search-quality");
 
-// Display patient details
-patientData.forEach((doc, index) => {
-  const entry = document.createElement("div");
-  entry.className = "patient-card";
-  entry.innerHTML = `
-    <h3>Patient ${index + 1}</h3>
-    <p><strong>Date:</strong> ${doc.date}</p>
+// Dynamically populate sleep quality options
+const sleepQualities = [...new Set(allData.map(d => d.sleep?.quality).filter(Boolean))];
+sleepQualities.forEach(q => {
+  const option = document.createElement("option");
+  option.value = q;
+  option.textContent = q;
+  qualitySelect.appendChild(option);
+});
 
-    <h4>Activity</h4>
-    <ul>
-      <li>Steps: ${doc.activity?.steps}</li>
-      <li>Active Minutes: ${doc.activity?.active_minutes}</li>
-      <li>Sedentary Hours: ${doc.activity?.sedentary_hours}</li>
-    </ul>
+// Helper Functions
+const getAverage = (arr) => arr?.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : "N/A";
+let barChart, lineChart, pieChart;
 
-    <h4>Nutrition</h4>
-    <ul>
-      <li>Calories: ${doc.nutrition?.calories}</li>
-      <li>Water (oz): ${doc.nutrition?.water_oz}</li>
-      <li>Macros: ${Object.entries(doc.nutrition?.macros || {}).map(([key, val]) => `${key}: ${val}`).join(', ')}</li>
-    </ul>
+function renderDashboard(data) {
+  container.innerHTML = "";
+  vitalsTable.innerHTML = "";
 
-    <h4>Sleep</h4>
-    <ul>
-      <li>Duration (hours): ${doc.sleep?.duration_hours}</li>
-      <li>Quality: ${doc.sleep?.quality}</li>
-      <li>Interruptions: ${doc.sleep?.interruptions}</li>
-    </ul>
+  data.forEach((doc, index) => {
+    const entry = document.createElement("div");
+    entry.className = "patient-card";
+    entry.innerHTML = `
+      <h3>Patient ${index + 1}</h3>
+      <p><strong>Date:</strong> ${doc.date}</p>
+      <h4>Activity</h4>
+      <ul>
+        <li>Steps: ${doc.activity?.steps}</li>
+        <li>Active Minutes: ${doc.activity?.active_minutes}</li>
+        <li>Sedentary Hours: ${doc.activity?.sedentary_hours}</li>
+      </ul>
+      <h4>Nutrition</h4>
+      <ul>
+        <li>Calories: ${doc.nutrition?.calories}</li>
+        <li>Water (oz): ${doc.nutrition?.water_oz}</li>
+        <li>Macros: ${Object.entries(doc.nutrition?.macros || {}).map(([k, v]) => `${k}: ${v}`).join(", ")}</li>
+      </ul>
+      <h4>Sleep</h4>
+      <ul>
+        <li>Duration (hours): ${doc.sleep?.duration_hours}</li>
+        <li>Quality: ${doc.sleep?.quality}</li>
+        <li>Interruptions: ${doc.sleep?.interruptions}</li>
+      </ul>
+      <h4>Vitals</h4>
+      <ul>
+        <li>Blood Pressure: ${doc.vitals?.blood_pressure?.join(", ") || "N/A"}</li>
+        <li>Heart Rate: ${doc.vitals?.heart_rate?.join(", ") || "N/A"}</li>
+        <li>Temperature: ${doc.vitals?.temperature?.join(", ") || "N/A"}</li>
+      </ul>
+    `;
+    container.appendChild(entry);
+  });
 
-    <h4>Vitals</h4>
-    <ul>
-      <li>Blood Pressure: ${doc.vitals?.blood_pressure?.join(', ')}</li>
-      <li>Heart Rate: ${doc.vitals?.heart_rate?.join(', ')}</li>
-      <li>Temperature: ${doc.vitals?.temperature?.join(', ')}</li>
-    </ul>
+  const labels = data.map((_, i) => `Patient ${i + 1}`);
+  const steps = data.map(d => d.activity?.steps || 0);
+  const calories = data.map(d => d.nutrition?.calories || 0);
+  const avgHeartRates = data.map(d => getAverage(d.vitals?.heart_rate));
+  const sleepQualityCounts = data.reduce((acc, d) => {
+    const quality = d.sleep?.quality || "Unknown";
+    acc[quality] = (acc[quality] || 0) + 1;
+    return acc;
+  }, {});
+
+  barChart?.destroy();
+  lineChart?.destroy();
+  pieChart?.destroy();
+
+  barChart = new Chart(barCanvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        { label: "Steps", data: steps, backgroundColor: "rgba(75, 192, 192, 0.6)" },
+        { label: "Calories", data: calories, backgroundColor: "rgba(255, 99, 132, 0.6)" }
+      ]
+    },
+    options: { responsive: true }
+  });
+
+  lineChart = new Chart(lineCanvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: "Average Heart Rate",
+        data: avgHeartRates,
+        borderColor: "rgba(153, 102, 255, 1)",
+        backgroundColor: "rgba(153, 102, 255, 0.2)",
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: { responsive: true }
+  });
+
+  pieChart = new Chart(pieCanvas, {
+    type: "pie",
+    data: {
+      labels: Object.keys(sleepQualityCounts),
+      datasets: [{
+        data: Object.values(sleepQualityCounts),
+        backgroundColor: Object.keys(sleepQualityCounts).map((_, i) => `hsl(${i * 60}, 70%, 60%)`)
+      }]
+    },
+    options: { responsive: true }
+  });
+
+  vitalsTable.innerHTML = `
+    <tr>
+      <th>Patient</th>
+      <th>Blood Pressure</th>
+      <th>Average Heart Rate</th>
+      <th>Average Temperature</th>
+    </tr>
   `;
-  container.appendChild(entry);
-});
+  data.forEach((doc, index) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>Patient ${index + 1}</td>
+      <td>${doc.vitals?.blood_pressure?.join(", ") || "N/A"}</td>
+      <td>${getAverage(doc.vitals?.heart_rate)}</td>
+      <td>${getAverage(doc.vitals?.temperature)}</td>
+    `;
+    vitalsTable.appendChild(row);
+  });
+}
 
-// --- Data Preparation ---
-const labels = patientData.map((_, i) => `Patient ${i + 1}`);
-const steps = patientData.map(d => d.activity?.steps || 0);
-const calories = patientData.map(d => d.nutrition?.calories || 0);
-const water = patientData.map(d => d.nutrition?.water_oz || 0);
+searchBtn.addEventListener("click", () => {
+  const dateInput = document.getElementById("search-date").value.trim();
+  const qualityInput = document.getElementById("search-quality").value;
+  errorMsg.textContent = "";
 
-// Compute average heart rate if array is provided
-const avgHeartRates = patientData.map(d => {
-  const rates = d.vitals?.heart_rate || [];
-  if (Array.isArray(rates) && rates.length > 0) {
-    const sum = rates.reduce((a, b) => a + b, 0);
-    return sum / rates.length;
+  let filtered = [...allData];
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+  if (dateInput && !dateRegex.test(dateInput)) {
+    errorMsg.textContent = "Invalid date format! Please use YYYY-MM-DD.";
+    return;
   }
-  return 0;
-});
 
-// Sleep quality counts
-const sleepQualityCounts = patientData.reduce((acc, d) => {
-  const quality = d.sleep?.quality || "Unknown";
-  acc[quality] = (acc[quality] || 0) + 1;
-  return acc;
-}, {});
+  if (dateInput) filtered = filtered.filter(d => d.date === dateInput);
+  if (qualityInput) filtered = filtered.filter(d => d.sleep?.quality === qualityInput);
 
-// --- Bar Chart: Steps & Calories ---
-new Chart(document.getElementById("barChart"), {
-  type: "bar",
-  data: {
-    labels,
-    datasets: [
-      {
-        label: "Steps",
-        data: steps,
-        backgroundColor: "rgba(75, 192, 192, 0.6)"
-      },
-      {
-        label: "Calories",
-        data: calories,
-        backgroundColor: "rgba(255, 99, 132, 0.6)"
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      title: { display: true, text: "Steps & Calories Burned per Patient" }
-    }
+  if (filtered.length === 0) {
+    errorMsg.textContent = "No results match your search criteria.";
   }
+
+  renderDashboard(filtered);
 });
 
-// --- Line Chart: Heart Rate Over Time ---
-new Chart(document.getElementById("lineChart"), {
-  type: "line",
-  data: {
-    labels,
-    datasets: [{
-      label: "Average Heart Rate",
-      data: avgHeartRates,
-      borderColor: "rgba(153, 102, 255, 1)",
-      backgroundColor: "rgba(153, 102, 255, 0.2)",
-      fill: true,
-      tension: 0.4
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      title: { display: true, text: "Heart Rate Over Time" }
-    }
-  }
-});
-
-// --- Pie Chart: Sleep Quality Distribution ---
-const sleepLabels = Object.keys(sleepQualityCounts);
-const sleepData = Object.values(sleepQualityCounts);
-const pieColors = sleepLabels.map((_, i) => `hsl(${i * 60}, 70%, 60%)`);
-
-new Chart(document.getElementById("pieChart"), {
-  type: "pie",
-  data: {
-    labels: sleepLabels,
-    datasets: [{
-      label: "Sleep Quality",
-      data: sleepData,
-      backgroundColor: pieColors
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      title: { display: true, text: "Sleep Quality Distribution" }
-    }
-  }
-});
-
-
-
-
-
-
-
-
-
+// Initial Load
+renderDashboard(allData);
 
 
 
