@@ -9,7 +9,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 
 # 1. Load dataset
-df = pd.read_csv("test_data.csv")  # Ensure this file is in the same directory
+df = pd.read_csv("test_data.csv")  # Please Ensure this file is in the same directory 
 
 # 2. Check for and handle missing values
 print("Missing Values:\n", df.isnull().sum())
@@ -135,7 +135,6 @@ for col in numeric_df.columns:
 # 9. Print number of missing values after fillna
 print("\n--- Missing Values After Handling ---")
 print(df.isnull().sum())
-<<<<<<< HEAD
 
 
 
@@ -147,8 +146,3 @@ print(df.isnull().sum())
 
 
 
-
-
-
-=======
->>>>>>> c571f8073881775c4bffb0103e4fe914dcf2cec6
