@@ -23,10 +23,10 @@ const lineCanvas = document.getElementById("lineChart");
 const pieCanvas = document.getElementById("pieChart");
 const vitalsTable = document.getElementById("data-table");
 const searchBtn = document.getElementById("search-btn");
+const resetBtn = document.getElementById("reset-btn");
 const errorMsg = document.getElementById("error-msg");
 const qualitySelect = document.getElementById("search-quality");
 
-// Dynamically populate sleep quality options
 const sleepQualities = [...new Set(allData.map(d => d.sleep?.quality).filter(Boolean))];
 sleepQualities.forEach(q => {
   const option = document.createElement("option");
@@ -35,20 +35,30 @@ sleepQualities.forEach(q => {
   qualitySelect.appendChild(option);
 });
 
-// Helper Functions
 const getAverage = (arr) => arr?.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : "N/A";
 let barChart, lineChart, pieChart;
 
-function renderDashboard(data) {
+function renderDashboard(data, searchDate = "", searchQuality = "") {
   container.innerHTML = "";
   vitalsTable.innerHTML = "";
 
   data.forEach((doc, index) => {
     const entry = document.createElement("div");
     entry.className = "patient-card";
+
+    if (
+      (searchDate && doc.date === searchDate) ||
+      (searchQuality && doc.sleep?.quality === searchQuality)
+    ) {
+      entry.classList.add("highlight-card");
+    }
+
+    const highlight = (value, match) =>
+      value === match ? `<span class="highlight-field">${value}</span>` : value;
+
     entry.innerHTML = `
       <h3>Patient ${index + 1}</h3>
-      <p><strong>Date:</strong> ${doc.date}</p>
+      <p><strong>Date:</strong> ${highlight(doc.date, searchDate)}</p>
       <h4>Activity</h4>
       <ul>
         <li>Steps: ${doc.activity?.steps}</li>
@@ -64,7 +74,7 @@ function renderDashboard(data) {
       <h4>Sleep</h4>
       <ul>
         <li>Duration (hours): ${doc.sleep?.duration_hours}</li>
-        <li>Quality: ${doc.sleep?.quality}</li>
+        <li>Quality: ${highlight(doc.sleep?.quality, searchQuality)}</li>
         <li>Interruptions: ${doc.sleep?.interruptions}</li>
       </ul>
       <h4>Vitals</h4>
@@ -74,6 +84,7 @@ function renderDashboard(data) {
         <li>Temperature: ${doc.vitals?.temperature?.join(", ") || "N/A"}</li>
       </ul>
     `;
+
     container.appendChild(entry);
   });
 
@@ -171,11 +182,20 @@ searchBtn.addEventListener("click", () => {
     errorMsg.textContent = "No results match your search criteria.";
   }
 
-  renderDashboard(filtered);
+  renderDashboard(filtered, dateInput, qualityInput); // pass for highlighting
 });
 
-// Initial Load
+resetBtn.addEventListener("click", () => {
+  document.getElementById("search-date").value = "";
+  document.getElementById("search-quality").value = "";
+  errorMsg.textContent = "";
+  renderDashboard(allData);
+});
+
 renderDashboard(allData);
+
+
+
 
 
 
