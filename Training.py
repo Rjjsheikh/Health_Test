@@ -135,6 +135,7 @@ for col in numeric_df.columns:
 # 9. Print number of missing values after fillna
 print("\n--- Missing Values After Handling ---")
 print(df.isnull().sum())
+<<<<<<< HEAD
 
 
 
@@ -149,3 +150,5 @@ print(df.isnull().sum())
 
 
 
+=======
+>>>>>>> c571f8073881775c4bffb0103e4fe914dcf2cec6
