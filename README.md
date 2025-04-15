@@ -53,7 +53,7 @@ The Patient Data Dashboard functions as a full-featured web-based application de
 |------------------|------------------------------------------|
 | Firebase         | Cloud database for real-time data        |
 | Chart.js         | Data visualization (charts, pie, line)   |
-| HTML/CSS/JS      | Frontend development                     |
+| HTML/JS          | Frontend development                     |
 | Python, pandas   | Data analysis and ML training            |
 | scikit-learn     | Classification model (Random Forest)     |
 | Joblib           | Saving/loading the trained model         |
